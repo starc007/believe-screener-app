@@ -10,7 +10,7 @@ import { ColorScheme, useColorScheme } from "@/hooks/useColorScheme";
 import {
   fetchBelieveTokens,
   fetchLaunchpadStats,
-  formatCurrency,
+  formatCurrencyMillions,
   formatNumber,
   LaunchpadStats,
   Token,
@@ -52,8 +52,12 @@ const Home: React.FC = () => {
     } else {
       const filtered = tokens.filter(
         (token) =>
-          token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+          token.baseAsset.name
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          token.baseAsset.symbol
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())
       );
       setFilteredTokens(filtered);
     }
@@ -98,7 +102,7 @@ const Home: React.FC = () => {
    */
   const handleTokenPress = (token: Token) => {
     // TODO: Navigate to token details screen
-    console.log("Token pressed:", token.symbol);
+    console.log("Token pressed:", token.baseAsset.symbol);
   };
 
   /**
@@ -120,8 +124,8 @@ const Home: React.FC = () => {
         <View style={styles.statsRow}>
           <StatsCard
             title="24h Volume"
-            value={formatCurrency(stats.stats24h.volume)}
-            subtitle="8.09%"
+            value={formatCurrencyMillions(stats.stats24h.volume)}
+            subtitle=""
             accentColor={colors.success}
           />
           <StatsCard
@@ -136,14 +140,14 @@ const Home: React.FC = () => {
         <View style={styles.statsRow}>
           <StatsCard
             title="Total Liquidity"
-            value={formatCurrency(stats.liquidity)}
+            value={formatCurrencyMillions(stats.liquidity)}
             subtitle=""
             accentColor={colors.accentPurple}
           />
           <StatsCard
             title="Bonded / Mints"
             value={`${stats.stats24h.graduates} / ${stats.stats24h.mints}`}
-            subtitle="8.52%"
+            subtitle=""
             accentColor={colors.warning}
           />
         </View>
@@ -249,9 +253,8 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: "row",
-    marginBottom: 16,
+    marginBottom: 12,
     marginHorizontal: -6,
-    marginTop: 16,
   },
   searchContainer: {
     marginHorizontal: 16,

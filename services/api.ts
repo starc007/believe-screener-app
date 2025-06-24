@@ -36,44 +36,72 @@ export interface LaunchpadStats {
   };
 }
 
+export interface TokenStats {
+  priceChange: number;
+  holderChange: number;
+  liquidityChange: number;
+  volumeChange: number;
+  buyVolume: number;
+  sellVolume: number;
+  buyOrganicVolume: number;
+  sellOrganicVolume: number;
+  numBuys: number;
+  numSells: number;
+  numTraders: number;
+  numOrganicBuyers: number;
+  numNetBuyers: number;
+}
+
 export interface Token {
   id: string;
-  name: string;
-  symbol: string;
-  icon?: string;
-  decimals: number;
-  twitter?: string;
-  dev: string;
-  circSupply: number;
-  totalSupply: number;
-  tokenProgram: string;
-  launchpad: string;
-  partnerConfig: string;
-  firstPool: {
+  chain: string;
+  dex: string;
+  type: string;
+  quoteAsset: string;
+  createdAt: string;
+  liquidity: number;
+  volume24h: number;
+  updatedAt: string;
+  baseAsset: {
     id: string;
-    createdAt: string;
+    name: string;
+    symbol: string;
+    icon?: string;
+    decimals: number;
+    twitter?: string;
+    dev: string;
+    circSupply: number;
+    totalSupply: number;
+    tokenProgram: string;
+    launchpad: string;
+    partnerConfig: string;
+    firstPool: {
+      id: string;
+      createdAt: string;
+    };
+    holderCount: number;
+    audit: {
+      mintAuthorityDisabled: boolean;
+      freezeAuthorityDisabled: boolean;
+      topHoldersPercentage: number;
+      devMigrations: number;
+    };
+    organicScore: number;
+    organicScoreLabel: string;
+    tags: string[];
+    graduatedPool?: string;
+    graduatedAt?: string;
+    fdv: number;
+    mcap: number;
+    usdPrice: number;
+    priceBlockId?: string;
+    volume24h?: number;
+    liquidity?: number;
+    stats5m: TokenStats;
+    stats1h: TokenStats;
+    stats6h: TokenStats;
+    stats24h: TokenStats;
   };
-  holderCount: number;
-  audit: {
-    mintAuthorityDisabled: boolean;
-    freezeAuthorityDisabled: boolean;
-    topHoldersPercentage: number;
-    devMigrations: number;
-  };
-  organicScore: number;
-  organicScoreLabel: string;
-  tags: string[];
-  graduatedPool?: string;
-  graduatedAt?: string;
-  fdv: number;
-  mcap: number;
-  usdPrice: number;
-  priceBlockId?: string;
-  volume24h?: number;
-  priceChange24h?: number;
-  priceChange30m?: number;
-  liquidity?: number;
-  trades24h?: number;
 }
 
 export interface LaunchpadStatsResponse {
@@ -120,7 +148,14 @@ export const fetchBelieveTokens = async (): Promise<TokensResponse> => {
     }
 
     const data = await response.json();
-    return data;
+    if (Array.isArray(data?.pools)) {
+      return { tokens: data.pools };
+    } else if (data.pools && Array.isArray(data.pools)) {
+      return data;
+    } else {
+      console.log("Unexpected data structure:", Object.keys(data));
+      return { tokens: [] };
+    }
   } catch (error) {
     console.error("Error fetching Believe tokens:", error);
     throw error;
@@ -153,6 +188,26 @@ export const formatCurrency = (amount: number): string => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
+};
+
+/**
+ * Formats large currency amounts in millions notation
+ */
+export const formatCurrencyMillions = (amount: number): string => {
+  if (!amount) {
+    return "$0.00";
+  }
+
+  if (amount >= 1e9) {
+    return `$${(amount / 1e9).toFixed(2)}B`;
+  }
+  if (amount >= 1e6) {
+    return `$${(amount / 1e6).toFixed(2)}M`;
+  }
+  if (amount >= 1e3) {
+    return `$${(amount / 1e3).toFixed(2)}K`;
+  }
+  return `$${amount.toFixed(2)}`;
 };
 
 /**

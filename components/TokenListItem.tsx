@@ -7,8 +7,7 @@ import { Colors } from "@/constants/Colors";
 import { ColorScheme, useColorScheme } from "@/hooks/useColorScheme";
 import {
   Token,
-  formatCurrency,
-  formatNumber,
+  formatCurrencyMillions,
   formatPercentage,
 } from "@/services/api";
 import React from "react";
@@ -31,8 +30,12 @@ export const TokenListItem: React.FC<TokenListItemProps> = ({
   };
 
   // Format price change for display
-  const priceChange24h = formatPercentage(token.priceChange24h || 0);
-  const priceChange30m = formatPercentage(token.priceChange30m || 0);
+  const priceChange24h = formatPercentage(
+    token?.baseAsset?.stats24h?.priceChange || 0
+  );
+  const priceChange5m = formatPercentage(
+    token?.baseAsset?.stats5m?.priceChange || 0
+  );
 
   return (
     <TouchableOpacity
@@ -46,18 +49,21 @@ export const TokenListItem: React.FC<TokenListItemProps> = ({
       {/* Token Info */}
       <View style={styles.tokenInfo}>
         <View style={styles.tokenHeader}>
-          {token.icon && (
-            <Image source={{ uri: token.icon }} style={styles.tokenIcon} />
+          {token.baseAsset.icon && (
+            <Image
+              source={{ uri: token.baseAsset.icon }}
+              style={styles.tokenIcon}
+            />
           )}
           <View style={styles.tokenDetails}>
             <Text
               style={[styles.tokenName, { color: colors.text }]}
               numberOfLines={1}
             >
-              {token.name}
+              {token.baseAsset.name}
             </Text>
             <Text style={[styles.tokenSymbol, { color: colors.textMuted }]}>
-              {token.symbol}
+              {token.baseAsset.symbol}
             </Text>
           </View>
         </View>
@@ -65,10 +71,10 @@ export const TokenListItem: React.FC<TokenListItemProps> = ({
         {/* Price and Market Cap */}
         <View style={styles.priceSection}>
           <Text style={[styles.price, { color: colors.text }]}>
-            {formatCurrency(token.usdPrice)}
+            ${token.baseAsset.usdPrice.toFixed(4)}
           </Text>
           <Text style={[styles.marketCap, { color: colors.textMuted }]}>
-            {formatNumber(token.mcap)}
+            {formatCurrencyMillions(token.baseAsset.mcap)}
           </Text>
         </View>
       </View>
@@ -77,19 +83,17 @@ export const TokenListItem: React.FC<TokenListItemProps> = ({
       <View style={styles.changesSection}>
         <View style={styles.changeItem}>
           <Text style={[styles.changeLabel, { color: colors.textMuted }]}>
-            30m
+            5m
           </Text>
           <Text
             style={[
               styles.changeValue,
               {
-                color: priceChange30m.isPositive
-                  ? colors.success
-                  : colors.error,
+                color: priceChange5m.isPositive ? colors.success : colors.error,
               },
             ]}
           >
-            {priceChange30m.text}
+            {priceChange5m.text}
           </Text>
         </View>
         <View style={styles.changeItem}>
@@ -118,7 +122,7 @@ export const TokenListItem: React.FC<TokenListItemProps> = ({
             Volume
           </Text>
           <Text style={[styles.metricValue, { color: colors.text }]}>
-            {formatNumber(token.volume24h || 0)}
+            {formatCurrencyMillions(token.baseAsset.volume24h || 0)}
           </Text>
         </View>
         <View style={styles.metricItem}>
@@ -126,7 +130,7 @@ export const TokenListItem: React.FC<TokenListItemProps> = ({
             Liquidity
           </Text>
           <Text style={[styles.metricValue, { color: colors.text }]}>
-            {formatNumber(token.liquidity || 0)}
+            {formatCurrencyMillions(token.baseAsset.liquidity || 0)}
           </Text>
         </View>
         <View style={styles.metricItem}>
@@ -134,7 +138,7 @@ export const TokenListItem: React.FC<TokenListItemProps> = ({
             Holders
           </Text>
           <Text style={[styles.metricValue, { color: colors.text }]}>
-            {formatNumber(token.holderCount)}
+            {formatCurrencyMillions(token.baseAsset.holderCount)}
           </Text>
         </View>
       </View>
