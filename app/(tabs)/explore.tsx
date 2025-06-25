@@ -24,6 +24,7 @@ import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Colors } from "@/constants/Colors";
 import { ColorScheme, useColorScheme } from "@/hooks/useColorScheme";
 import { fetchBelieveTokens } from "@/services/api";
+import { router } from "expo-router";
 
 const AnimatedView = Animated.createAnimatedComponent(View);
 
@@ -171,8 +172,12 @@ export default function ExploreScreen() {
     transform: [{ translateY: headerTranslateY.value }],
   }));
 
+  const handleTokenPress = (token: Token) => {
+    router.push(`/token/${token.baseAsset.id}`);
+  };
+
   const renderTokenItem = ({ item, index }: { item: Token; index: number }) => (
-    <TokenListItem token={item} index={index} />
+    <TokenListItem token={item} index={index} onPress={handleTokenPress} />
   );
 
   if (loading && tokens.length === 0) {
