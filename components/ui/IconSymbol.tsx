@@ -18,6 +18,8 @@ const MAPPING = {
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
   explore: "explore",
+  "line.horizontal.3.decrease.circle": "filter-list",
+  xmark: "close",
 } as IconMapping;
 
 /**

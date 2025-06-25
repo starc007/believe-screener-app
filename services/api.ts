@@ -135,12 +135,14 @@ export const fetchLaunchpadStats =
   };
 
 /**
- * Fetches top traded tokens from Believe launchpad
+ * Fetches top traded tokens from Believe launchpad with time filter
  */
-export const fetchBelieveTokens = async (): Promise<TokensResponse> => {
+export const fetchBelieveTokens = async (
+  timeframe: string = "24h"
+): Promise<TokensResponse> => {
   try {
     const response = await fetch(
-      `${BASE_URL}/pools/toptraded/24h?launchpads=Believe`
+      `${BASE_URL}/pools/toptraded/${timeframe}?launchpads=Believe`
     );
 
     if (!response.ok) {

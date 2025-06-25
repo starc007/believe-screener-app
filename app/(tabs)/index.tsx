@@ -70,7 +70,7 @@ const Home: React.FC = () => {
     try {
       const [statsResponse, tokensResponse] = await Promise.all([
         fetchLaunchpadStats(),
-        fetchBelieveTokens(),
+        fetchBelieveTokens("1h"),
       ]);
 
       // Find Believe stats
@@ -195,8 +195,12 @@ const Home: React.FC = () => {
       <FlatList
         data={filteredTokens}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TokenListItem token={item} onPress={handleTokenPress} />
+        renderItem={({ item, index }) => (
+          <TokenListItem
+            token={item}
+            onPress={handleTokenPress}
+            index={index}
+          />
         )}
         ListHeaderComponent={
           <View>

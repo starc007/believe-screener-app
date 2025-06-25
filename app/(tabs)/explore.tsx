@@ -1,209 +1,182 @@
 /**
- * Explore Screen - Advanced Token Analytics
- * Provides filtering, sorting, and advanced analytics for tokens
+ * Explore Screen
+ * Compact design with filter icon that opens bottom sheet
  */
 
-import { TokenListItem } from "@/components/TokenListItem";
-import { Colors } from "@/constants/Colors";
-import { ColorScheme, useColorScheme } from "@/hooks/useColorScheme";
-import { fetchBelieveTokens, formatNumber, Token } from "@/services/api";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
-  ScrollView,
+  Pressable,
+  RefreshControl,
+  SafeAreaView,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  TextInput,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 
-type SortOption = "mcap" | "volume" | "price" | "holders" | "age";
-type FilterOption = "all" | "graduated" | "new" | "trending";
+import { FilterBottomSheet } from "@/components/FilterBottomSheet";
+import { DropdownOption } from "@/components/FilterDropdown";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { TimeFrame } from "@/components/TimeFrameSelector";
+import { TokenListItem } from "@/components/TokenListItem";
+import { IconSymbol } from "@/components/ui/IconSymbol";
+import { Colors } from "@/constants/Colors";
+import { ColorScheme, useColorScheme } from "@/hooks/useColorScheme";
+import { fetchBelieveTokens, Token } from "@/services/api";
 
-const Explore: React.FC = () => {
+const AnimatedView = Animated.createAnimatedComponent(View);
+
+// Filter options
+const FILTER_OPTIONS: DropdownOption[] = [
+  { value: "all", label: "All Tokens", icon: "🌟" },
+  { value: "hot", label: "Hot", icon: "🔥" },
+  { value: "trending", label: "Trending", icon: "📈" },
+  { value: "graduated", label: "Graduated", icon: "🎓" },
+  { value: "new", label: "New (24h)", icon: "🆕" },
+];
+
+const SORT_OPTIONS: DropdownOption[] = [
+  { value: "market_cap", label: "Market Cap", icon: "💰" },
+  { value: "volume", label: "Volume", icon: "📊" },
+  { value: "price", label: "Price", icon: "💵" },
+  { value: "traders", label: "Traders", icon: "👥" },
+  { value: "holders", label: "Holders", icon: "🤝" },
+  { value: "newest", label: "Newest", icon: "⏰" },
+];
+
+export default function ExploreScreen() {
   const colorScheme: ColorScheme = useColorScheme();
   const colors = Colors[colorScheme];
 
+  // State
   const [tokens, setTokens] = useState<Token[]>([]);
-  const [filteredTokens, setFilteredTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<SortOption>("mcap");
-  const [filterBy, setFilterBy] = useState<FilterOption>("all");
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTimeFrame, setSelectedTimeFrame] = useState<TimeFrame>("24h");
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [selectedSort, setSelectedSort] = useState("market_cap");
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
 
-  useEffect(() => {
-    loadTokens();
-  }, []);
+  // Animation values
+  const headerOpacity = useSharedValue(0);
+  const headerTranslateY = useSharedValue(-20);
 
-  useEffect(() => {
-    applyFiltersAndSort();
-  }, [tokens, sortBy, filterBy]);
-
-  const loadTokens = async () => {
+  // Load data
+  const loadTokens = async (timeFrame: TimeFrame = selectedTimeFrame) => {
     try {
-      const response = await fetchBelieveTokens();
-      setTokens(response.tokens || []);
+      setLoading(true);
+      const tokensResponse = await fetchBelieveTokens(timeFrame);
+      setTokens(tokensResponse.tokens);
     } catch (error) {
-      console.error("Error loading tokens:", error);
+      console.error("Error fetching tokens:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const applyFiltersAndSort = () => {
-    let filtered = [...tokens];
+  // Refresh handler
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadTokens();
+    setRefreshing(false);
+  };
 
-    // Apply filters
-    switch (filterBy) {
-      case "graduated":
-        filtered = filtered.filter((token) => token.graduatedPool);
-        break;
-      case "new":
-        // Tokens created in last 24 hours
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        filtered = filtered.filter(
-          (token) => new Date(token.firstPool.createdAt) > oneDayAgo
-        );
-        break;
-      case "trending":
-        // Tokens with high volume relative to market cap
-        filtered = filtered.filter(
-          (token) => (token.volume24h || 0) > token.mcap * 0.1
-        );
-        break;
-    }
+  // Handle time frame change
+  const handleTimeFrameChange = (timeFrame: TimeFrame) => {
+    setSelectedTimeFrame(timeFrame);
+    loadTokens(timeFrame);
+  };
 
-    // Apply sorting
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "mcap":
-          return b.mcap - a.mcap;
-        case "volume":
-          return (b.volume24h || 0) - (a.volume24h || 0);
-        case "price":
-          return b.usdPrice - a.usdPrice;
-        case "holders":
-          return b.holderCount - a.holderCount;
-        case "age":
+  // Filter and sort tokens
+  const filteredAndSortedTokens = useMemo(() => {
+    let filtered = tokens.filter((token) => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          token.baseAsset.symbol.toLowerCase().includes(query) ||
+          token.baseAsset.name.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    });
+
+    // Category filter
+    filtered = filtered.filter((token) => {
+      switch (selectedFilter) {
+        case "hot":
+          return token.baseAsset.stats24h.numTraders >= 100;
+        case "trending":
+          return token.volume24h / token.baseAsset.mcap > 0.1;
+        case "graduated":
+          return token.baseAsset.mcap > 69000;
+        case "new":
           return (
-            new Date(b.firstPool.createdAt).getTime() -
-            new Date(a.firstPool.createdAt).getTime()
+            Date.now() - new Date(token.createdAt).getTime() <
+            24 * 60 * 60 * 1000
           );
         default:
-          return 0;
+          return true;
       }
     });
 
-    setFilteredTokens(filtered);
-  };
+    // Sort
+    filtered.sort((a, b) => {
+      switch (selectedSort) {
+        case "volume":
+          return b.volume24h - a.volume24h;
+        case "price":
+          return b.baseAsset.usdPrice - a.baseAsset.usdPrice;
+        case "traders":
+          return (
+            b.baseAsset.stats24h.numTraders - a.baseAsset.stats24h.numTraders
+          );
+        case "holders":
+          return b.baseAsset.holderCount - a.baseAsset.holderCount;
+        case "newest":
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        default: // market_cap
+          return b.baseAsset.mcap - a.baseAsset.mcap;
+      }
+    });
 
-  const renderFilterButton = (option: FilterOption, label: string) => (
-    <TouchableOpacity
-      key={option}
-      style={[
-        styles.filterButton,
-        {
-          backgroundColor:
-            filterBy === option ? colors.primary : colors.surface,
-          borderColor: colors.border,
-        },
-      ]}
-      onPress={() => setFilterBy(option)}
-    >
-      <Text
-        style={[
-          styles.filterButtonText,
-          {
-            color: filterBy === option ? colors.background : colors.text,
-            fontWeight: filterBy === option ? "600" : "500",
-          },
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
+    return filtered;
+  }, [tokens, searchQuery, selectedFilter, selectedSort]);
+
+  // Initial load and animation
+  useEffect(() => {
+    loadTokens();
+
+    // Animate header
+    headerOpacity.value = withTiming(1, { duration: 600 });
+    headerTranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+  }, []);
+
+  const headerAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: headerOpacity.value,
+    transform: [{ translateY: headerTranslateY.value }],
+  }));
+
+  const renderTokenItem = ({ item, index }: { item: Token; index: number }) => (
+    <TokenListItem token={item} index={index} />
   );
 
-  const renderSortButton = (option: SortOption, label: string) => (
-    <TouchableOpacity
-      key={option}
-      style={[
-        styles.sortButton,
-        {
-          backgroundColor: sortBy === option ? colors.primary : colors.surface,
-          borderColor: colors.border,
-        },
-      ]}
-      onPress={() => setSortBy(option)}
-    >
-      <Text
-        style={[
-          styles.sortButtonText,
-          {
-            color: sortBy === option ? colors.background : colors.text,
-            fontWeight: sortBy === option ? "600" : "500",
-          },
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <Text style={[styles.title, { color: colors.text }]}>Explore Tokens</Text>
-      <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-        {formatNumber(filteredTokens.length)} tokens found
-      </Text>
-
-      {/* Filter Options */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Filter
-        </Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterContainer}
-        >
-          {renderFilterButton("all", "All")}
-          {renderFilterButton("graduated", "Graduated")}
-          {renderFilterButton("new", "New (24h)")}
-          {renderFilterButton("trending", "Trending")}
-        </ScrollView>
-      </View>
-
-      {/* Sort Options */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Sort by
-        </Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.sortContainer}
-        >
-          {renderSortButton("mcap", "Market Cap")}
-          {renderSortButton("volume", "Volume")}
-          {renderSortButton("price", "Price")}
-          {renderSortButton("holders", "Holders")}
-          {renderSortButton("age", "Newest")}
-        </ScrollView>
-      </View>
-    </View>
-  );
-
-  if (loading) {
+  if (loading && tokens.length === 0) {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
       >
-        <View style={styles.loadingContainer}>
-          <Text style={[styles.loadingText, { color: colors.textMuted }]}>
-            Loading tokens...
-          </Text>
-        </View>
+        <LoadingSpinner />
       </SafeAreaView>
     );
   }
@@ -212,81 +185,147 @@ const Explore: React.FC = () => {
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
     >
+      <AnimatedView style={[styles.header, headerAnimatedStyle]}>
+        <View style={styles.titleRow}>
+          <Text style={[styles.title, { color: colors.text }]}>
+            Explore Tokens
+          </Text>
+          <Pressable
+            onPress={() => setShowFilterSheet(true)}
+            style={[
+              styles.filterButton,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <IconSymbol
+              name="line.horizontal.3.decrease.circle"
+              size={20}
+              color={colors.primary}
+            />
+          </Pressable>
+        </View>
+
+        <View style={styles.searchRow}>
+          <TextInput
+            style={[
+              styles.searchInput,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                color: colors.text,
+              },
+            ]}
+            placeholder="Search tokens..."
+            placeholderTextColor={colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          <Text style={[styles.resultCount, { color: colors.textMuted }]}>
+            {filteredAndSortedTokens.length} found
+          </Text>
+        </View>
+      </AnimatedView>
+
       <FlatList
-        data={filteredTokens}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <TokenListItem token={item} />}
-        ListHeaderComponent={renderHeader}
+        data={filteredAndSortedTokens}
+        keyExtractor={(item) => item.baseAsset.id}
+        renderItem={renderTokenItem}
+        contentContainerStyle={styles.tokenList}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+              {searchQuery
+                ? "No tokens found matching your search"
+                : "No tokens available"}
+            </Text>
+          </View>
+        }
+      />
+
+      <FilterBottomSheet
+        visible={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        selectedTimeFrame={selectedTimeFrame}
+        onTimeFrameChange={handleTimeFrameChange}
+        selectedFilter={selectedFilter}
+        onFilterChange={setSelectedFilter}
+        selectedSort={selectedSort}
+        onSortChange={setSelectedSort}
+        filterOptions={FILTER_OPTIONS}
+        sortOptions={SORT_OPTIONS}
+        resultCount={filteredAndSortedTokens.length}
       />
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
   header: {
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 16,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
   },
   title: {
     fontSize: 28,
     fontWeight: "800",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 24,
-  },
-  section: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  filterContainer: {
-    flexDirection: "row",
   },
   filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
+    padding: 12,
+    borderRadius: 12,
     borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  filterButtonText: {
-    fontSize: 14,
-  },
-  sortContainer: {
+  searchRow: {
     flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
-  sortButton: {
+  searchInput: {
+    flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 1,
+    fontSize: 16,
+    fontWeight: "500",
   },
-  sortButtonText: {
-    fontSize: 14,
+  resultCount: {
+    fontSize: 12,
+    fontWeight: "500",
+    minWidth: 60,
+    textAlign: "right",
   },
-  listContent: {
-    paddingBottom: 100,
+  tokenList: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: "500",
+    textAlign: "center",
   },
 });
-
-export default Explore;
