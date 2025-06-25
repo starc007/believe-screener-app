@@ -1,12 +1,6 @@
-/**
- * TokenListItem Component
- * Beautiful animated token list item with smooth interactions
- */
-
 import { Colors } from "@/constants/Colors";
 import { ColorScheme, useColorScheme } from "@/hooks/useColorScheme";
 import {
-  Token,
   formatCurrencyMillions,
   formatNumber,
   formatPercentage,

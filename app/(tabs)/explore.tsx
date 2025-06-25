@@ -1,8 +1,3 @@
-/**
- * Explore Screen
- * Compact design with filter icon that opens bottom sheet
- */
-
 import React, { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
@@ -28,7 +23,7 @@ import { TokenListItem } from "@/components/TokenListItem";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Colors } from "@/constants/Colors";
 import { ColorScheme, useColorScheme } from "@/hooks/useColorScheme";
-import { fetchBelieveTokens, Token } from "@/services/api";
+import { fetchBelieveTokens } from "@/services/api";
 
 const AnimatedView = Animated.createAnimatedComponent(View);
 

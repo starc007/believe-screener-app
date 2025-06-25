@@ -1,8 +1,3 @@
-/**
- * Home Screen - Believe Screener Dashboard
- * Displays launchpad statistics and token listings
- */
-
 import { StatsCard } from "@/components/StatsCard";
 import { TokenListItem } from "@/components/TokenListItem";
 import { Colors } from "@/constants/Colors";

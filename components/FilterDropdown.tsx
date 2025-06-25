@@ -1,8 +1,3 @@
-/**
- * FilterDropdown Component
- * Reusable animated dropdown for filters and sort options
- */
-
 import { Colors } from "@/constants/Colors";
 import { ColorScheme, useColorScheme } from "@/hooks/useColorScheme";
 import React, { useState } from "react";

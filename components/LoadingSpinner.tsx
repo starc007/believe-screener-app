@@ -1,8 +1,3 @@
-/**
- * LoadingSpinner Component
- * Reusable loading indicator with customizable styling
- */
-
 import { Colors } from "@/constants/Colors";
 import { ColorScheme, useColorScheme } from "@/hooks/useColorScheme";
 import React from "react";

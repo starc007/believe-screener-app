@@ -1,8 +1,3 @@
-/**
- * TimeFrameSelector Component
- * Compact time frame selector with color-coded buttons
- */
-
 import { Colors } from "@/constants/Colors";
 import { ColorScheme, useColorScheme } from "@/hooks/useColorScheme";
 import React from "react";
