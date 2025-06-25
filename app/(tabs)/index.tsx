@@ -13,8 +13,8 @@ import {
   formatCurrencyMillions,
   formatNumber,
   LaunchpadStats,
-  Token,
 } from "@/services/api";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -30,6 +30,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const Home: React.FC = () => {
   const colorScheme: ColorScheme = useColorScheme();
   const colors = Colors[colorScheme];
+  const router = useRouter();
 
   // State management
   const [stats, setStats] = useState<LaunchpadStats | null>(null);
@@ -80,8 +81,7 @@ const Home: React.FC = () => {
    * Handles token item press
    */
   const handleTokenPress = (token: Token) => {
-    // TODO: Navigate to token details screen
-    console.log("Token pressed:", token.baseAsset.symbol);
+    router.push(`/token/${token.baseAsset.id}`);
   };
 
   /**

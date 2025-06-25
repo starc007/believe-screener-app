@@ -36,6 +36,7 @@ export const Colors = {
     success: primaryGreen,
     error: accentRed,
     warning: "#F59E0B",
+    white: "#FFFFFF",
   },
   dark: {
     text: "#FFFFFF",
@@ -59,5 +60,6 @@ export const Colors = {
     success: primaryGreen,
     error: accentRed,
     warning: "#F59E0B",
+    white: "#FFFFFF",
   },
 };

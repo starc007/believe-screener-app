@@ -52,57 +52,20 @@ export interface TokenStats {
   numNetBuyers: number;
 }
 
-export interface Token {
-  id: string;
-  chain: string;
-  dex: string;
-  type: string;
-  quoteAsset: string;
-  createdAt: string;
-  liquidity: number;
-  volume24h: number;
-  updatedAt: string;
-  baseAsset: {
-    id: string;
-    name: string;
-    symbol: string;
-    icon?: string;
-    decimals: number;
-    twitter?: string;
-    dev: string;
-    circSupply: number;
-    totalSupply: number;
-    tokenProgram: string;
-    launchpad: string;
-    partnerConfig: string;
-    firstPool: {
-      id: string;
-      createdAt: string;
-    };
-    holderCount: number;
-    audit: {
-      mintAuthorityDisabled: boolean;
-      freezeAuthorityDisabled: boolean;
-      topHoldersPercentage: number;
-      devMigrations: number;
-    };
-    organicScore: number;
-    organicScoreLabel: string;
-    tags: string[];
-    graduatedPool?: string;
-    graduatedAt?: string;
-    fdv: number;
-    mcap: number;
-    usdPrice: number;
-    priceBlockId?: string;
-    volume24h?: number;
-    liquidity?: number;
-    stats5m: TokenStats;
-    stats1h: TokenStats;
-    stats6h: TokenStats;
-    stats24h: TokenStats;
-  };
+export interface ChartCandle {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
 }
+
+export interface ChartData {
+  candles: ChartCandle[];
+}
+
+export type ChartInterval = "1_HOUR" | "4_HOUR" | "12_HOUR";
 
 export interface LaunchpadStatsResponse {
   launchpads: LaunchpadStats[];
@@ -112,7 +75,13 @@ export interface TokensResponse {
   tokens: Token[];
 }
 
+export interface TokenDetailResponse {
+  pools: Token[];
+  total: number;
+}
+
 const BASE_URL = "https://datapi.jup.ag/v1";
+const CHART_BASE_URL = "https://datapi.jup.ag/v2";
 
 /**
  * Fetches launchpad statistics from Jupiter API
@@ -159,6 +128,53 @@ export const fetchBelieveTokens = async (
     }
   } catch (error) {
     console.error("Error fetching Believe tokens:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches detailed token information by asset ID
+ */
+export const fetchTokenDetail = async (
+  assetId: string
+): Promise<Token | null> => {
+  try {
+    const url = `${BASE_URL}/pools?assetIds=${assetId}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: TokenDetailResponse = await response.json();
+    return data.pools && data.pools.length > 0 ? data.pools[0] : null;
+  } catch (error) {
+    console.error("Error fetching token details:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches chart data for a token
+ */
+export const fetchTokenChart = async (
+  assetId: string,
+  interval: ChartInterval = "4_HOUR",
+  candles: number = 300
+): Promise<ChartData> => {
+  try {
+    const to = Date.now();
+    const url = `${CHART_BASE_URL}/charts/${assetId}?interval=${interval}&to=${to}&candles=${candles}&type=price`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: ChartData = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching token chart:", error);
     throw error;
   }
 };
@@ -249,4 +265,13 @@ export const getTimeAgo = (timestamp: string): string => {
 
   const diffInDays = Math.floor(diffInHours / 24);
   return `${diffInDays}d ago`;
+};
+
+/**
+ * Formats address for display (shortens middle part)
+ */
+export const formatAddress = (address: string): string => {
+  if (!address) return "";
+  if (address.length <= 10) return address;
+  return `${address.slice(0, 4)}...${address.slice(-4)}`;
 };

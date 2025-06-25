@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import { useColorScheme } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 
 export default function RootLayout() {
@@ -18,12 +19,20 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="token/[id]"
+          options={{
+            headerShown: false,
+            presentation: "modal",
+            animation: "slide_from_right",
+          }}
+        />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-    </>
+    </GestureHandlerRootView>
   );
 }

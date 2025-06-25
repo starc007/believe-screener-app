@@ -9,7 +9,8 @@ export type ColorScheme = "light" | "dark";
 
 export function useColorScheme(): ColorScheme {
   const colorScheme = useNativeColorScheme();
+  // implement later
 
   // Default to dark theme as per the monochrome design
-  return colorScheme === "light" ? "light" : "dark";
+  return "dark";
 }
