@@ -17,7 +17,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { DropdownOption } from "@/components/FilterDropdown";
-import { TimeFrame, TimeFrameSelector } from "@/components/TimeFrameSelector";
+import { TimeFrameSelector } from "@/components/TimeFrameSelector";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Colors } from "@/constants/Colors";
 import { ColorScheme, useColorScheme } from "@/hooks/useColorScheme";
@@ -157,16 +157,22 @@ export function FilterBottomSheet({
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   Time Frame
                 </Text>
+
                 <TimeFrameSelector
                   selectedTimeFrame={selectedTimeFrame}
                   onTimeFrameChange={onTimeFrameChange}
                 />
               </View>
 
+              {/* Separator */}
+              <View
+                style={[styles.separator, { backgroundColor: colors.border }]}
+              />
+
               {/* Category Filters */}
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Category
+                  Category Filter
                 </Text>
                 <View style={styles.optionsGrid}>
                   {filterOptions.map((option) => (
@@ -181,11 +187,17 @@ export function FilterBottomSheet({
                 </View>
               </View>
 
+              {/* Separator */}
+              <View
+                style={[styles.separator, { backgroundColor: colors.border }]}
+              />
+
               {/* Sort Options */}
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   Sort By
                 </Text>
+
                 <View style={styles.optionsGrid}>
                   {sortOptions.map((option) => (
                     <OptionItem
@@ -265,6 +277,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 12,
   },
+  sectionDescription: {
+    fontSize: 14,
+    marginBottom: 12,
+  },
   optionsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -294,5 +310,9 @@ const styles = StyleSheet.create({
   resultCount: {
     fontSize: 16,
     fontWeight: "500",
+  },
+  separator: {
+    height: 1,
+    marginVertical: 24,
   },
 });

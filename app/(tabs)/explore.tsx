@@ -24,7 +24,6 @@ import Animated, {
 import { FilterBottomSheet } from "@/components/FilterBottomSheet";
 import { DropdownOption } from "@/components/FilterDropdown";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { TimeFrame } from "@/components/TimeFrameSelector";
 import { TokenListItem } from "@/components/TokenListItem";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Colors } from "@/constants/Colors";
@@ -74,7 +73,8 @@ export default function ExploreScreen() {
     try {
       setLoading(true);
       const tokensResponse = await fetchBelieveTokens(timeFrame);
-      setTokens(tokensResponse.tokens);
+      const tokenData = tokensResponse.tokens;
+      setTokens(tokenData);
     } catch (error) {
       console.error("Error fetching tokens:", error);
     } finally {
@@ -97,38 +97,44 @@ export default function ExploreScreen() {
 
   // Filter and sort tokens
   const filteredAndSortedTokens = useMemo(() => {
-    let filtered = tokens.filter((token) => {
-      // Search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        return (
+    let filtered = [...tokens]; // Start with all tokens
+
+    // Apply search filter (this can work with any other filter)
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (token) =>
           token.baseAsset.symbol.toLowerCase().includes(query) ||
           token.baseAsset.name.toLowerCase().includes(query)
-        );
-      }
-      return true;
-    });
+      );
+    }
 
-    // Category filter
-    filtered = filtered.filter((token) => {
-      switch (selectedFilter) {
-        case "hot":
-          return token.baseAsset.stats24h.numTraders >= 100;
-        case "trending":
-          return token.volume24h / token.baseAsset.mcap > 0.1;
-        case "graduated":
-          return token.baseAsset.mcap > 69000;
-        case "new":
-          return (
-            Date.now() - new Date(token.createdAt).getTime() <
-            24 * 60 * 60 * 1000
-          );
-        default:
-          return true;
-      }
-    });
+    // Apply category filter ONLY (independent of other filters)
+    if (selectedFilter !== "all") {
+      filtered = filtered.filter((token) => {
+        switch (selectedFilter) {
+          case "hot":
+            const isHot = token.baseAsset.stats24h?.numTraders >= 100;
+            return isHot;
+          case "trending":
+            const isTrending = token.volume24h / token.baseAsset.mcap > 0.1;
+            return isTrending;
+          case "graduated":
+            const isGraduated = token.baseAsset.mcap > 69000;
+            return isGraduated;
+          case "new":
+            const isNew =
+              Date.now() - new Date(token.createdAt).getTime() <
+              24 * 60 * 60 * 1000;
+            return isNew;
+          default:
+            return true;
+        }
+      });
+      console.log(`After ${selectedFilter} filter:`, filtered.length);
+    }
 
-    // Sort
+    // Sort the filtered results
     filtered.sort((a, b) => {
       switch (selectedSort) {
         case "volume":
@@ -137,10 +143,13 @@ export default function ExploreScreen() {
           return b.baseAsset.usdPrice - a.baseAsset.usdPrice;
         case "traders":
           return (
-            b.baseAsset.stats24h.numTraders - a.baseAsset.stats24h.numTraders
+            (b.baseAsset.stats24h?.numTraders || 0) -
+            (a.baseAsset.stats24h?.numTraders || 0)
           );
         case "holders":
-          return b.baseAsset.holderCount - a.baseAsset.holderCount;
+          return (
+            (b.baseAsset.holderCount || 0) - (a.baseAsset.holderCount || 0)
+          );
         case "newest":
           return (
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -220,9 +229,6 @@ export default function ExploreScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
-          <Text style={[styles.resultCount, { color: colors.textMuted }]}>
-            {filteredAndSortedTokens.length} found
-          </Text>
         </View>
       </AnimatedView>
 
@@ -273,9 +279,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 16,
+    gap: 12,
   },
   titleRow: {
     flexDirection: "row",
@@ -284,7 +291,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "800",
   },
   filterButton: {
@@ -297,12 +304,11 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
   },
   searchInput: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 1,
     fontSize: 16,
@@ -315,7 +321,6 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   tokenList: {
-    paddingHorizontal: 16,
     paddingTop: 8,
   },
   emptyContainer: {

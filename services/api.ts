@@ -141,9 +141,8 @@ export const fetchBelieveTokens = async (
   timeframe: string = "24h"
 ): Promise<TokensResponse> => {
   try {
-    const response = await fetch(
-      `${BASE_URL}/pools/toptraded/${timeframe}?launchpads=Believe`
-    );
+    const url = `${BASE_URL}/pools/toptraded/${timeframe}?launchpads=Believe`;
+    const response = await fetch(url);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

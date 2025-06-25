@@ -8,8 +8,6 @@ import { ColorScheme, useColorScheme } from "@/hooks/useColorScheme";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-export type TimeFrame = "5m" | "1h" | "6h" | "24h";
-
 interface TimeFrameOption {
   value: TimeFrame;
   label: string;

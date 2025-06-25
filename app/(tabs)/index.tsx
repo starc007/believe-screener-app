@@ -23,7 +23,6 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -35,33 +34,13 @@ const Home: React.FC = () => {
   // State management
   const [stats, setStats] = useState<LaunchpadStats | null>(null);
   const [tokens, setTokens] = useState<Token[]>([]);
-  const [filteredTokens, setFilteredTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   // Load initial data
   useEffect(() => {
     loadData();
   }, []);
-
-  // Filter tokens based on search query
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredTokens(tokens);
-    } else {
-      const filtered = tokens.filter(
-        (token) =>
-          token.baseAsset.name
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          token.baseAsset.symbol
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase())
-      );
-      setFilteredTokens(filtered);
-    }
-  }, [searchQuery, tokens]);
 
   /**
    * Loads data from APIs
@@ -156,21 +135,6 @@ const Home: React.FC = () => {
   };
 
   /**
-   * Renders the search bar
-   */
-  const renderSearchBar = () => (
-    <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
-      <TextInput
-        style={[styles.searchInput, { color: colors.text }]}
-        placeholder="Search tokens..."
-        placeholderTextColor={colors.textMuted}
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-      />
-    </View>
-  );
-
-  /**
    * Renders loading state
    */
   if (loading) {
@@ -193,7 +157,7 @@ const Home: React.FC = () => {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <FlatList
-        data={filteredTokens}
+        data={tokens}
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
           <TokenListItem
@@ -205,7 +169,6 @@ const Home: React.FC = () => {
         ListHeaderComponent={
           <View>
             {renderStatsHeader()}
-            {renderSearchBar()}
             <Text style={[styles.tokensTitle, { color: colors.text }]}>
               Top Tokens
             </Text>
@@ -259,17 +222,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginBottom: 12,
     marginHorizontal: -6,
-  },
-  searchContainer: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 12,
-    padding: 4,
-  },
-  searchInput: {
-    padding: 12,
-    fontSize: 16,
-    fontWeight: "500",
   },
   tokensTitle: {
     fontSize: 20,
